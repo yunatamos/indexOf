@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 import { program } from 'commander';
 import inquirer from 'inquirer';
@@ -57,15 +58,15 @@ const SENSITIVE_FILE_PATTERNS = [
 // Directories and patterns to ignore
 const IGNORE_PATTERNS = [
   'node_modules/',
-  '.git/',
-  '.svn/',
-  '.idea/',
-  '.vscode/',
-  '__pycache__/',
-  'dist/',
-  'build/',
-  'tmp/',
-  'temp/'
+  // '.git/',
+  // '.svn/',
+  // '.idea/',
+  // '.vscode/',
+  // '__pycache__/',
+  // 'dist/',
+  // 'build/',
+  // 'tmp/',
+  // 'temp/'
 ];
 // Add retry configuration
 const RETRY_CONFIG = {
@@ -134,6 +135,15 @@ function shouldIgnorePath(path) {
     return reducedIgnorePatterns.some(pattern => path.includes(pattern));
   }
   return IGNORE_PATTERNS.some(pattern => path.includes(pattern));
+}
+function shouldIgnoreFile(filename) {
+  // Check if it's a PHP file
+  if (filename.toLowerCase().endsWith('.php')) {
+    return true;
+  }
+
+  // Check other ignore patterns
+  return shouldIgnorePath(filename);
 }
 
 function isSensitiveFile(filename) {
@@ -318,7 +328,7 @@ async function getPageContents(url, auth = null, retryCount = 0) {
     const directories = [];
 
     for (const link of links) {
-      if (shouldIgnorePath(link)) continue;
+      if (shouldIgnoreFile(link)) continue;
       if (!link || isApacheSortingUrl(link)) continue;
 
       if (link.endsWith('/')) {
@@ -378,7 +388,7 @@ function isIndexPage(html) {
 
 // Enhanced processDirectory with better error handling
 async function processDirectory(baseUrl, currentPath = '', auth = null, depth = 0) {
-  if (shouldIgnorePath(currentPath)) {
+  if (shouldIgnoreFile(currentPath)) {
     console.log(chalk.yellow(`Skipping ignored directory: ${currentPath}`));
     return;
   }
