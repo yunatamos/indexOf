@@ -319,8 +319,8 @@ async function getPageContents(url, auth = null, retryCount = 0) {
   }
 
   try {
-    const cleanUrl = url.split('?')[0];
-    const response = await axios.get(cleanUrl, config);
+    const cleanUrl = url.endsWith('/') ? url : url + '/';   
+    const response = await axios.get(url, config);
     const html = response.data;
     const links = await parsePageForLinks(html, cleanUrl);
 
@@ -343,9 +343,23 @@ async function getPageContents(url, auth = null, retryCount = 0) {
       const envCheck = await axios.get(new URL('.env', cleanUrl).toString(), config);
       if (envCheck.status === 200) {
         files.push('.env');
+        console.log(chalk.yellow(`Found sensitive file: ${new URL('.env', cleanUrl).toString()}`));
       }
     } catch (error) {
       // Silently ignore errors when checking for .env files
+    }
+    
+    // Special check for .git files
+    try {
+      if(!cleanUrl.toString().endsWith('.git')) {
+        const gitCheck = await axios.get(new URL('.git', cleanUrl).toString(), config);
+      if (gitCheck.status === 200) {
+        directories.push('.git');
+        console.log(chalk.green(`Found .git directory: ${new URL('.git', cleanUrl).toString()}`));
+      }
+    }
+    } catch (error) {
+      // Directory doesn't exist - this is normal
     }
 
     return { files, directories, isIndex: isIndexPage(html) };
